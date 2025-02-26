@@ -105,33 +105,34 @@ CREATE TABLE Copy (
     deregisteredDate DATE,
     FOREIGN KEY (ISBN) REFERENCES Edition(ISBN) ON DELETE CASCADE
 );
-
+/*updated values*/
 CREATE TABLE User (
-    passport VARCHAR(50) PRIMARY KEY,
-    name VARCHAR(255),
-    surname VARCHAR(255),
-    birthDate DATE,
-    municipality VARCHAR(255),
-    address TEXT,
-    email VARCHAR(255),
-    phone VARCHAR(20),
+    passport VARCHAR(20) PRIMARY KEY,
+    name CHAR(80),
+    surname1 CHAR(80),
+    surname2 CHAR(80),
+    birthDate CHAR(10),
+    municipality x,
+    address CHAR(150),
+    email CHAR(100),
+    phone CHAR(9),
     FOREIGN KEY (municipality) REFERENCES Municipality(name) ON DELETE NO ACTION
 );
-
+/**/
 CREATE TABLE Loan (
     signature VARCHAR(50),
-    userID INT,
+    passport VARCHAR(20),
     loanDate DATE,
     returnDate DATE,
     penaltyWeeks INT,
-    PRIMARY KEY (signature, userID),
+    PRIMARY KEY (signature, passport),
     FOREIGN KEY (signature) REFERENCES Copy(signature) ON DELETE CASCADE,
-    FOREIGN KEY (userID) REFERENCES User(userID) ON DELETE CASCADE
+    FOREIGN KEY (passport) REFERENCES User(passport) ON DELETE CASCADE
 );
 
 CREATE TABLE Reservation (
     signature VARCHAR(50),
-    passport VARCHAR(50),
+    passport VARCHAR(20),
     assignmentID INT,
     reservationDate DATE,
     PRIMARY KEY (signature, passport, assignmentID),
