@@ -1,3 +1,18 @@
+DROP TABLE Municipality;
+DROP TABLE Library;
+DROP TABLE Bibus;
+DROP TABLE RouteStop;
+DROP TABLE Assignment;
+DROP TABLE Driver;
+DROP TABLE Book;
+DROP TABLE Edition; 
+DROP TABLE Copy;
+DROP TABLE User;
+DROP TABLE Loan; 
+DROP TABLE Reservation;
+DROP TABLE Comment; 
+
+
 CREATE TABLE Municipality (
     name VARCHAR(255) PRIMARY KEY,
     population INT,
