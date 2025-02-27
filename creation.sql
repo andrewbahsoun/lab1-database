@@ -31,88 +31,89 @@ CREATE TABLE Library (
 );
 
 CREATE TABLE Bibus (
-    plate VARCHAR(50) PRIMARY KEY,
-    status VARCHAR(50)
+    plate CHAR(8) PRIMARY KEY,
+    status CHAR(50)
 );
 
 CREATE TABLE RouteStop (
-    routeID INT,
-    municipality VARCHAR(255),
-    stopTime TIME,
+    routeID CHAR(5),
+    municipality CHAR(50),
+    stopTime CHAR(8),
     PRIMARY KEY (routeID, municipality),
     FOREIGN KEY (municipality) REFERENCES Municipality(name) ON DELETE CASCADE
 );
 
 CREATE TABLE Assignment (
-    assignmentID INT PRIMARY KEY,
-    stopDate DATE,
-    plate VARCHAR(50),
-    routeID INT,
-    driverPassport VARCHAR(50),
+    assignmentID INT AUTO_INCREMENT PRIMARY KEY,
+    stopDate CHAR(10),
+    plate CHAR(8),
+    routeID CHAR(5),
+    driverPassport CHAR(20),
     FOREIGN KEY (plate) REFERENCES Bibus(plate) ON DELETE NO ACTION,
     FOREIGN KEY (routeID) REFERENCES RouteStop(routeID) ON DELETE NO ACTION,
     FOREIGN KEY (driverPassport) REFERENCES Driver(passport) ON DELETE NO ACTION
 );
 
 CREATE TABLE Driver (
-    passport VARCHAR(50) PRIMARY KEY,
-    name VARCHAR(255),
-    surname VARCHAR(255),
-    phone VARCHAR(20),
-    email VARCHAR(255),
-    contractStart DATE,
-    contractEnd DATE,
-    status VARCHAR(50)
+    passport CHAR(20) PRIMARY KEY,
+    name CHAR(80),
+    surname CHAR(80),
+    phone CHAR(80),
+    email CHAR(100),
+    contractStart CHAR(10),
+    contractEnd CHAR(10),
+    status CHAR(50)
 );
 
 CREATE TABLE Book (
-    bookID INT PRIMARY KEY,
-    title VARCHAR(255),
-    mainAuthor VARCHAR(255),
-    country VARCHAR(255),
-    originalLanguage VARCHAR(50),
-    alternativeTitles TEXT,
-    subject TEXT,
-    contentNotes TEXT,
-    awards TEXT
+    bookID INT AUTO_INCREMENT PRIMARY KEY,
+    title CHAR(200),
+    mainAuthor CHAR(100),
+    country CHAR(50),
+    originalLanguage CHAR(50),
+    alternativeTitle CHAR(200),
+    otherAuthors CHAR(200),
+    subject CHAR(200),
+    contentNotes VARCHAR2(2500),
+    awards CHAR(200)
 );
 
 CREATE TABLE Edition (
-    ISBN VARCHAR(50) PRIMARY KEY,
+    ISBN CHAR(20) PRIMARY KEY,
     bookID INT,
-    publicationDate DATE,
-    mainLanguage VARCHAR(50),
-    otherLanguages TEXT,
-    editionNumber INT,
-    publisher VARCHAR(255),
+    publicationDate CHAR(12),
+    mainLanguage CHAR(50),
+    otherLanguages CHAR(50),
+    edition CHAR(50),
+    publisher CHAR(100),
     length INT,
-    series VARCHAR(255),
-    legalDeposit VARCHAR(255),
-    publicationPlace VARCHAR(255),
-    dimensions TEXT,
-    physicalFeatures TEXT,
-    ancillaryMaterial TEXT,
-    notes TEXT,
-    URL TEXT,
+    series CHAR(50),
+    legalDeposit CHAR(20),
+    publicationPlace CHAR(50),
+    dimensions CHAR(50),
+    physicalFeatures CHAR(200),
+    ancillaryMaterial CHAR(200),
+    notes CHAR(500),
+    URL CHAR(200),
     FOREIGN KEY (bookID) REFERENCES Book(bookID) ON DELETE CASCADE
 );
 
 CREATE TABLE Copy (
-    signature VARCHAR(50) PRIMARY KEY,
-    ISBN VARCHAR(50),
-    condition TEXT,
-    comments TEXT,
-    deregisteredDate DATE,
+    signature CHAR(20) PRIMARY KEY,
+    ISBN CHAR(20),
+    condition CHAR(50),
+    comments CHAR(500),
+    deregisteredDate CHAR(12),
     FOREIGN KEY (ISBN) REFERENCES Edition(ISBN) ON DELETE CASCADE
 );
 /*updated values*/
 CREATE TABLE User (
-    passport VARCHAR(20) PRIMARY KEY,
+    passport CHAR(20) PRIMARY KEY,
     name CHAR(80),
     surname1 CHAR(80),
     surname2 CHAR(80),
     birthDate CHAR(10),
-    municipality x,
+    municipality CHAR(50),
     address CHAR(150),
     email CHAR(100),
     phone CHAR(9),
@@ -120,21 +121,20 @@ CREATE TABLE User (
 );
 /**/
 CREATE TABLE Loan (
-    signature VARCHAR(50),
-    passport VARCHAR(20),
-    loanDate DATE,
-    returnDate DATE,
-    penaltyWeeks INT,
+    signature CHAR(20),
+    passport CHAR(20),
+    loanDate CHAR(22),
+    returnDate CHAR(22),
     PRIMARY KEY (signature, passport),
     FOREIGN KEY (signature) REFERENCES Copy(signature) ON DELETE CASCADE,
     FOREIGN KEY (passport) REFERENCES User(passport) ON DELETE CASCADE
 );
 
 CREATE TABLE Reservation (
-    signature VARCHAR(50),
-    passport VARCHAR(20),
+    signature CHAR(20),
+    passport CHAR(20),
     assignmentID INT,
-    reservationDate DATE,
+    reservationDate CHAR(22),
     PRIMARY KEY (signature, passport, assignmentID),
     FOREIGN KEY (signature) REFERENCES Copy(signature) ON DELETE CASCADE,
     FOREIGN KEY (passport) REFERENCES User(passport) ON DELETE CASCADE,
@@ -142,13 +142,13 @@ CREATE TABLE Reservation (
 );
 
 CREATE TABLE Comment (
-    commentID INT PRIMARY KEY,
-    passport VARCHAR(50),
+    commentID INT AUTO_INCREMENT PRIMARY KEY,
+    passport CHAR(20),
     bookID INT,
-    date DATE,
-    text TEXT,
-    likes INT,
-    dislikes INT,
+    date CHAR(22),
+    text CHAR(2000),
+    likes CHAR(7),
+    dislikes CHAR(7),
     FOREIGN KEY (passport) REFERENCES User(passport) ON DELETE CASCADE,
     FOREIGN KEY (bookID) REFERENCES Book(bookID) ON DELETE CASCADE
 );
