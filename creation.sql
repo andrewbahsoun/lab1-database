@@ -14,19 +14,19 @@ DROP TABLE Comment;
 
 
 CREATE TABLE Municipality (
-    name VARCHAR(255) PRIMARY KEY,
-    population INT,
-    hasLibrary BOOLEAN
+    name CHAR(50) PRIMARY KEY,
+    population CHAR(8),
+    hasLibrary CHAR(1)
 );
 
 CREATE TABLE Library (
-    CIF VARCHAR(255) PRIMARY KEY,
-    name VARCHAR(255),
-    foundationDate DATE,
-    municipality VARCHAR(255),
-    address TEXT,
-    email VARCHAR(255),
-    phone VARCHAR(20),
+    CIF CHAR(20) PRIMARY KEY,
+    name CHAR(80),
+    foundationDate CHAR(10),
+    municipality CHAR(50),
+    address CHAR(100),
+    email CHAR(100),
+    phone CHAR(9),
     FOREIGN KEY (municipality) REFERENCES Municipality(name) ON DELETE NO ACTION
 );
 
