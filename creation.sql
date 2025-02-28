@@ -21,13 +21,14 @@ CREATE TABLE Municipality (
 );
 
 CREATE TABLE Library (
-    CIF CHAR(20) PRIMARY KEY,
+    CIF CHAR(20),
     name CHAR(80),
     foundationDate CHAR(10),
     municipality CHAR(50),
     address CHAR(100),
     email CHAR(100),
     phone CHAR(9) CHECK (LENGTH(phone) = 9), -- S1: Enforce 9-digit phone number
+    PRIMARY KEY (CIF, name, address),
     FOREIGN KEY (municipality) REFERENCES Municipality(name) 
 );
 
@@ -110,7 +111,7 @@ CREATE TABLE Edition (
     otherLanguages CHAR(50),
     edition CHAR(50),
     publisher CHAR(100),
-    length INT,
+    length CHAR(50),
     series CHAR(50),
     legalDeposit CHAR(20),
     publicationPlace CHAR(50),
@@ -185,22 +186,6 @@ BEFORE INSERT ON Comments
 FOR EACH ROW
 BEGIN
     SELECT comment_seq.NEXTVAL INTO :NEW.commentID FROM dual;
-END;
-/
-
-
--- S7: Enforce library borrowing limit (Trigger)
-CREATE OR REPLACE TRIGGER enforce_library_borrowing_limit
-BEFORE INSERT ON Loan
-FOR EACH ROW
-DECLARE
-    max_loans INT;
-BEGIN
-    SELECT COUNT(*) INTO max_loans FROM Loan WHERE passport = :NEW.passport;
-    IF max_loans >= (SELECT (population / 10) * 2 FROM Municipality WHERE name = 
-                     (SELECT municipality FROM Users WHERE passport = :NEW.passport)) THEN
-        RAISE_APPLICATION_ERROR(-20001, 'User has exceeded the borrowing limit.');
-    END IF;
 END;
 /
 
