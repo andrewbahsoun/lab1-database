@@ -1,16 +1,17 @@
-DROP TABLE Municipality;
-DROP TABLE Library;
-DROP TABLE Bibus;
-DROP TABLE RouteStop;
-DROP TABLE Assignment;
-DROP TABLE Driver;
-DROP TABLE Book;
-DROP TABLE Edition; 
-DROP TABLE Copy;
-DROP TABLE User;
-DROP TABLE Loan; 
-DROP TABLE Reservation;
-DROP TABLE Comment; 
+DROP TABLE Reservation CASCADE CONSTRAINTS;
+DROP TABLE Loan CASCADE CONSTRAINTS;
+DROP TABLE Comments CASCADE CONSTRAINTS;
+DROP TABLE Users CASCADE CONSTRAINTS;
+DROP TABLE Copy CASCADE CONSTRAINTS;
+DROP TABLE Edition CASCADE CONSTRAINTS;
+DROP TABLE Book CASCADE CONSTRAINTS;
+DROP TABLE Library CASCADE CONSTRAINTS;
+DROP TABLE RouteStop CASCADE CONSTRAINTS;
+DROP TABLE Assignment CASCADE CONSTRAINTS;
+DROP TABLE Driver CASCADE CONSTRAINTS;
+DROP TABLE Bibus CASCADE CONSTRAINTS;
+DROP TABLE Municipality CASCADE CONSTRAINTS;
+
 
 
 CREATE TABLE Municipality (
@@ -27,7 +28,7 @@ CREATE TABLE Library (
     address CHAR(100),
     email CHAR(100),
     phone CHAR(9) CHECK (LENGTH(phone) = 9), -- S1: Enforce 9-digit phone number
-    FOREIGN KEY (municipality) REFERENCES Municipality(name) ON DELETE NO ACTION
+    FOREIGN KEY (municipality) REFERENCES Municipality(name) 
 );
 
 CREATE TABLE Bibus (
@@ -43,17 +44,6 @@ CREATE TABLE RouteStop (
     FOREIGN KEY (municipality) REFERENCES Municipality(name) ON DELETE CASCADE
 );
 
-CREATE TABLE Assignment (
-    assignmentID INT AUTO_INCREMENT PRIMARY KEY,
-    stopDate CHAR(10),
-    plate CHAR(8),
-    routeID CHAR(5),
-    driverPassport CHAR(20),
-    FOREIGN KEY (plate) REFERENCES Bibus(plate) ON DELETE NO ACTION,
-    FOREIGN KEY (routeID) REFERENCES RouteStop(routeID) ON DELETE NO ACTION,
-    FOREIGN KEY (driverPassport) REFERENCES Driver(passport) ON DELETE NO ACTION
-);
-
 CREATE TABLE Driver (
     passport CHAR(20) PRIMARY KEY,
     name CHAR(80),
@@ -65,8 +55,33 @@ CREATE TABLE Driver (
     status CHAR(50) CHECK (status IN ('Day off', 'Assigned', 'Not on route'))  -- S11: Enforce valid status
 );
 
+DROP SEQUENCE assignment_seq;
+CREATE SEQUENCE assignment_seq START WITH 1 INCREMENT BY 1;
+
+CREATE TABLE Assignment (
+    assignmentID INT PRIMARY KEY,
+    stopDate CHAR(10),
+    plate CHAR(8),
+    routeID CHAR(5),
+    driverPassport CHAR(20),
+    FOREIGN KEY (plate) REFERENCES Bibus(plate),
+    FOREIGN KEY (driverPassport) REFERENCES Driver(passport)
+);
+
+CREATE OR REPLACE TRIGGER assignment_trigger
+BEFORE INSERT ON Assignment
+FOR EACH ROW
+BEGIN
+    SELECT assignment_seq.NEXTVAL INTO :NEW.assignmentID FROM dual;
+END;
+/
+
+
+DROP SEQUENCE book_seq;
+CREATE SEQUENCE book_seq START WITH 1 INCREMENT BY 1;
+
 CREATE TABLE Book (
-    bookID INT AUTO_INCREMENT PRIMARY KEY,
+    bookID INT PRIMARY KEY,
     title CHAR(200),
     mainAuthor CHAR(100),
     country CHAR(50),
@@ -77,6 +92,15 @@ CREATE TABLE Book (
     contentNotes VARCHAR2(2500),
     awards CHAR(200)
 );
+
+CREATE OR REPLACE TRIGGER book_trigger
+BEFORE INSERT ON Book
+FOR EACH ROW
+BEGIN
+    SELECT book_seq.NEXTVAL INTO :NEW.bookID FROM dual;
+END;
+/
+
 
 CREATE TABLE Edition (
     ISBN CHAR(20) PRIMARY KEY,
@@ -107,7 +131,7 @@ CREATE TABLE Copy (
     FOREIGN KEY (ISBN) REFERENCES Edition(ISBN) ON DELETE CASCADE
 );
 
-CREATE TABLE User (
+CREATE TABLE Users (
     passport CHAR(20) PRIMARY KEY,
     name CHAR(80),
     surname1 CHAR(80),
@@ -117,7 +141,7 @@ CREATE TABLE User (
     address CHAR(150),
     email CHAR(100),
     phone CHAR(9) CHECK (LENGTH(phone) = 9), -- S1: Enforce 9-digit phone number
-    FOREIGN KEY (municipality) REFERENCES Municipality(name) ON DELETE NO ACTION
+    FOREIGN KEY (municipality) REFERENCES Municipality(name)
 );
 
 CREATE TABLE Loan (
@@ -127,7 +151,7 @@ CREATE TABLE Loan (
     returnDate CHAR(22),
     PRIMARY KEY (signature, passport),
     FOREIGN KEY (signature) REFERENCES Copy(signature) ON DELETE CASCADE,
-    FOREIGN KEY (passport) REFERENCES User(passport) ON DELETE CASCADE
+    FOREIGN KEY (passport) REFERENCES Users(passport) ON DELETE CASCADE
 );
 
 CREATE TABLE Reservation (
@@ -137,21 +161,33 @@ CREATE TABLE Reservation (
     reservationDate CHAR(22),
     PRIMARY KEY (signature, passport, assignmentID),
     FOREIGN KEY (signature) REFERENCES Copy(signature) ON DELETE CASCADE,
-    FOREIGN KEY (passport) REFERENCES User(passport) ON DELETE CASCADE, -- S5: Cascade delete for penalized users
+    FOREIGN KEY (passport) REFERENCES Users(passport) ON DELETE CASCADE, -- S5: Cascade delete for penalized users
     FOREIGN KEY (assignmentID) REFERENCES Assignment(assignmentID) ON DELETE CASCADE
 );
 
-CREATE TABLE Comment (
-    commentID INT AUTO_INCREMENT PRIMARY KEY,
+DROP SEQUENCE comment_seq;
+CREATE SEQUENCE comment_seq START WITH 1 INCREMENT BY 1;
+
+CREATE TABLE Comments (
+    commentID INT PRIMARY KEY,
     passport CHAR(20),
     bookID INT,
-    date CHAR(22),
-    text CHAR(2000),
+    postDate CHAR(22),
+    postText CHAR(2000),
     likes CHAR(7),
     dislikes CHAR(7),
-    FOREIGN KEY (passport) REFERENCES User(passport) ON DELETE CASCADE,
+    FOREIGN KEY (passport) REFERENCES Users(passport) ON DELETE CASCADE,
     FOREIGN KEY (bookID) REFERENCES Book(bookID) ON DELETE CASCADE
 );
+
+CREATE OR REPLACE TRIGGER comment_trigger
+BEFORE INSERT ON Comments
+FOR EACH ROW
+BEGIN
+    SELECT comment_seq.NEXTVAL INTO :NEW.commentID FROM dual;
+END;
+/
+
 
 -- S7: Enforce library borrowing limit (Trigger)
 CREATE OR REPLACE TRIGGER enforce_library_borrowing_limit
@@ -160,21 +196,29 @@ FOR EACH ROW
 DECLARE
     max_loans INT;
 BEGIN
-    SELECT COUNT(*) INTO max_loans FROM Loan WHERE userID = :NEW.userID;
-    IF max_loans >= (SELECT (population / 10) * 2 FROM Municipality WHERE name = (SELECT municipality FROM User WHERE passport = :NEW.userID)) THEN
+    SELECT COUNT(*) INTO max_loans FROM Loan WHERE passport = :NEW.passport;
+    IF max_loans >= (SELECT (population / 10) * 2 FROM Municipality WHERE name = 
+                     (SELECT municipality FROM Users WHERE passport = :NEW.passport)) THEN
         RAISE_APPLICATION_ERROR(-20001, 'User has exceeded the borrowing limit.');
     END IF;
 END;
 /
 
+
 -- S9: Ensure users can only comment on books they borrowed (Trigger)
 CREATE OR REPLACE TRIGGER restrict_comments_to_borrowers
-BEFORE INSERT ON Comment
+BEFORE INSERT ON Comments
 FOR EACH ROW
 DECLARE
     borrowed INT;
 BEGIN
-    SELECT COUNT(*) INTO borrowed FROM Loan WHERE userID = :NEW.passport AND signature IN (SELECT signature FROM Copy WHERE ISBN = (SELECT ISBN FROM Edition WHERE bookID = :NEW.bookID));
+    SELECT COUNT(*) INTO borrowed 
+    FROM Loan 
+    WHERE passport = :NEW.passport 
+    AND signature IN (
+        SELECT signature FROM Copy 
+        WHERE ISBN = (SELECT ISBN FROM Edition WHERE bookID = :NEW.bookID)
+    );
     IF borrowed = 0 THEN
         RAISE_APPLICATION_ERROR(-20002, 'User can only comment on books they have borrowed.');
     END IF;
